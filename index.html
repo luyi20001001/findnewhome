@@ -1,0 +1,1441 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<title>物資清單</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Work+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+<style>
+  :root{
+    --paper:#EAC7B3;
+    --card:#FFFFFF;
+    --ink:#2E4A63;
+    --ink-soft: color-mix(in srgb, var(--ink) 55%, white 45%);
+    --moss:#7FA8C2;
+    --tag-red:#C9705A;
+    --gold:#E3D48A;
+    --line: rgba(46,74,99,0.16);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(46,74,99,0.07) 1px, transparent 0);
+    background-size: 18px 18px;
+    color:var(--ink);
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+    padding-bottom:60px;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:28px 20px 60px;}
+
+  /* ---------- header ---------- */
+  .manifest-head{
+    border:2px solid var(--ink);
+    background:var(--card);
+    padding:22px 24px;
+    position:relative;
+    margin-bottom:28px;
+  }
+  .manifest-head::before{
+    content:"MANIFEST";
+    position:absolute;
+    top:-11px; left:24px;
+    background:var(--paper);
+    padding:0 8px;
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    letter-spacing:.18em;
+    color:var(--ink-soft);
+  }
+  .manifest-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;padding-right:110px;}
+  h1{
+    font-family:'Oswald', sans-serif;
+    font-weight:700;
+    font-size:clamp(28px,5vw,42px);
+    letter-spacing:.01em;
+    margin:0 0 4px;
+    text-transform:uppercase;
+  }
+  .sub{color:var(--ink-soft);font-size:14px;}
+  .stamp-count{
+    font-family:'Space Mono', monospace;
+    border:2px solid var(--moss);
+    color:var(--moss);
+    padding:8px 14px;
+    font-size:13px;
+    transform:rotate(-3deg);
+    white-space:nowrap;
+  }
+  .stamp-count b{font-size:20px;display:block;font-family:'Oswald',sans-serif;}
+
+  /* ---------- user login badge (top-right) ---------- */
+  .user-badge{
+    position:absolute;
+    top:14px; right:16px;
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    color:var(--ink-soft);
+    text-align:right;
+    max-width:150px;
+  }
+  .user-badge a{color:var(--ink);text-decoration:none;cursor:pointer;border:1px solid var(--ink);padding:4px 10px;border-radius:16px;}
+  .user-badge a:hover{background:var(--ink);color:var(--card);}
+  .user-badge b{color:var(--ink);}
+  .user-badge .logout-link{border:none;padding:0;text-decoration:underline;margin-left:4px;color:var(--ink-soft);}
+  .user-badge .logout-link:hover{background:none;color:var(--tag-red);}
+
+  /* ---------- floating admin button (bottom-right, fixed) ---------- */
+  .admin-fab{
+    position:fixed;
+    bottom:20px; right:20px;
+    background:var(--ink);
+    color:var(--card);
+    padding:11px 20px;
+    border-radius:30px;
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    letter-spacing:.04em;
+    text-decoration:none;
+    box-shadow:0 6px 18px rgba(0,0,0,.25);
+    z-index:40;
+  }
+  .admin-fab:hover{background:var(--tag-red);}
+
+  /* ---------- grid ---------- */
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+    gap:22px;
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .card:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(46,74,99,0.14);}
+  .card-img{
+    width:100%;
+    aspect-ratio:4/3;
+    object-fit:cover;
+    background:#e9ded3;
+    border-bottom:1px solid var(--line);
+    display:block;
+  }
+  .card-img.placeholder{display:flex;align-items:center;justify-content:center;color:var(--ink-soft);font-family:'Space Mono',monospace;font-size:12px;text-align:center;padding:10px;}
+  .card-body{padding:16px 16px 18px;display:flex;flex-direction:column;gap:8px;flex:1;}
+  .card-cat{
+    font-family:'Space Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:.1em;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+  }
+  .card-title{font-family:'Oswald',sans-serif;font-size:19px;font-weight:600;margin:0;}
+  .card-desc{font-size:13.5px;color:var(--ink-soft);line-height:1.5;flex:1;}
+  .card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:4px;}
+  .queue-badge{
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    color:var(--moss);
+    border:1px solid var(--moss);
+    border-radius:20px;
+    padding:3px 10px;
+  }
+  .status-tag{
+    font-family:'Space Mono', monospace;
+    font-size:11px;
+    padding:3px 9px;
+    border-radius:20px;
+  }
+  .status-available{background:color-mix(in srgb, var(--moss) 20%, white);color:var(--moss);}
+  .status-reserved{background:color-mix(in srgb, var(--gold) 45%, white);color:#8a662c;}
+  .status-shipped{background:rgba(46,74,99,0.1);color:var(--ink-soft);text-decoration:line-through;}
+  button{font-family:'Work Sans',sans-serif;cursor:pointer;}
+  .btn{
+    border:none;
+    background:var(--ink);
+    color:var(--card);
+    padding:9px 14px;
+    font-size:13px;
+    font-weight:600;
+    letter-spacing:.02em;
+  }
+  .btn:hover{background:var(--tag-red);}
+  .btn:disabled{background:#c9c2b3;cursor:not-allowed;}
+  .btn-outline{background:transparent;border:1px solid var(--ink);color:var(--ink);}
+  .btn-outline:hover{background:var(--ink);color:var(--card);}
+  .btn-red{background:var(--tag-red);}
+  .btn-red:hover{background:#8f342c;}
+  .btn-small{padding:5px 10px;font-size:11.5px;}
+  .empty{
+    text-align:center;padding:60px 20px;color:var(--ink-soft);
+    font-family:'Space Mono',monospace;font-size:13px;
+  }
+  .filter-bar{
+    display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;
+  }
+  .filter-chip{
+    font-family:'Space Mono', monospace;
+    font-size:12px;
+    padding:6px 13px;
+    border:1px solid var(--ink);
+    background:transparent;
+    color:var(--ink);
+    border-radius:20px;
+  }
+  .filter-chip.active{background:var(--ink);color:var(--card);}
+  .filter-chip:hover{background:var(--tag-red);color:var(--card);border-color:var(--tag-red);}
+  .btn-joined{background:var(--moss);color:#fff;}
+  .btn-joined:hover{background:#3a4630;}
+  .my-position{
+    font-family:'Space Mono', monospace;
+    font-size:11.5px;
+    color:var(--moss);
+    margin-top:2px;
+  }
+  .toast{
+    position:fixed;top:20px;left:50%;transform:translateX(-50%);
+    background:var(--ink);color:var(--card);
+    padding:12px 20px;font-family:'Space Mono',monospace;font-size:13px;
+    z-index:80;box-shadow:0 8px 20px rgba(0,0,0,.25);
+    display:none;
+  }
+  .toast.show{display:block;}
+
+  /* ---------- announcement ---------- */
+  .announce-bar{
+    background:color-mix(in srgb, var(--gold) 35%, white);
+    border:1px solid var(--gold);
+    border-left:5px solid var(--gold);
+    padding:12px 16px;
+    margin-bottom:20px;
+    font-size:13.5px;
+    line-height:1.6;
+    white-space:pre-wrap;
+  }
+  .announce-bar .eyebrow{
+    font-family:'Space Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.12em;
+    color:#8a662c;
+    display:block;
+    margin-bottom:4px;
+  }
+
+  /* ---------- locked/shipped card ---------- */
+  .card.card-locked{opacity:.5;filter:grayscale(35%);}
+  .card-locked .card-img{filter:grayscale(20%);}
+  .shipped-stamp{
+    position:absolute;
+    top:16px; right:12px;
+    border:2px solid var(--tag-red);
+    color:var(--tag-red);
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    letter-spacing:.1em;
+    padding:3px 9px;
+    transform:rotate(6deg);
+    background:rgba(255,255,255,0.9);
+    z-index:3;
+  }
+
+  /* ---------- people list (admin) ---------- */
+  .person-block{border-bottom:1px solid var(--line);padding:14px 0;}
+  .person-block:last-child{border-bottom:none;}
+  .person-name{font-family:'Oswald',sans-serif;font-size:16px;}
+  .person-contact{font-family:'Space Mono',monospace;font-size:11.5px;color:var(--ink-soft);margin-left:6px;}
+  .person-items{margin-top:6px;padding-left:2px;}
+  .person-item-row{
+    display:flex;align-items:center;gap:8px;
+    font-size:13px;padding:3px 0;
+  }
+  .prio-badge{
+    font-family:'Space Mono',monospace;
+    font-size:10.5px;
+    color:#fff;
+    background:var(--moss);
+    padding:2px 8px;
+    border-radius:10px;
+  }
+  .pos-badge{
+    font-family:'Space Mono',monospace;
+    font-size:10.5px;
+    color:var(--ink-soft);
+    border:1px solid var(--line);
+    padding:1px 7px;
+    border-radius:10px;
+  }
+
+  /* ---------- modal ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(46,74,99,0.55);
+    display:none;align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .overlay.show{display:flex;}
+  .modal{
+    background:var(--card);
+    border:2px solid var(--ink);
+    max-width:420px;width:100%;
+    padding:26px;
+    position:relative;
+    max-height:90vh;
+    overflow-y:auto;
+  }
+  .modal h3{font-family:'Oswald',sans-serif;font-size:22px;margin:0 0 4px;text-transform:uppercase;}
+  .modal p.hint{color:var(--ink-soft);font-size:13px;margin:0 0 16px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--ink-soft);margin-bottom:5px;font-family:'Space Mono',monospace;letter-spacing:.03em;}
+  .field input, .field textarea, .field select{
+    width:100%;padding:9px 10px;border:1px solid var(--line);background:#fff;
+    font-family:'Work Sans',sans-serif;font-size:14px;color:var(--ink);
+  }
+  .field input[type=color]{padding:2px;height:38px;cursor:pointer;}
+  .field textarea{resize:vertical;min-height:60px;}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+  .close-x{position:absolute;top:14px;right:16px;background:none;border:none;font-size:18px;color:var(--ink-soft);}
+  .msg{font-size:12.5px;margin-top:8px;font-family:'Space Mono',monospace;}
+  .msg.err{color:var(--tag-red);}
+  .msg.ok{color:var(--moss);}
+
+  /* ---------- admin ---------- */
+  #adminView{display:none;}
+  .admin-bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;}
+  .admin-bar .tag-title{font-family:'Oswald',sans-serif;font-size:26px;text-transform:uppercase;}
+  .panel{background:var(--card);border:1px solid var(--line);padding:20px;margin-bottom:22px;}
+  .panel h4{font-family:'Oswald',sans-serif;text-transform:uppercase;font-size:15px;letter-spacing:.04em;margin:0 0 14px;color:var(--ink-soft);}
+  .row-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;}
+  .stat-box{
+    border:1px solid var(--line); padding:12px 14px; background:color-mix(in srgb, var(--paper) 25%, white);
+  }
+  .stat-box .num{font-family:'Oswald',sans-serif;font-size:26px;color:var(--ink);}
+  .stat-box .label{font-family:'Space Mono',monospace;font-size:10.5px;color:var(--ink-soft);letter-spacing:.04em;}
+  .upload-or{
+    display:flex;align-items:center;gap:10px;color:var(--ink-soft);
+    font-family:'Space Mono',monospace;font-size:11px;margin:10px 0;
+  }
+  .upload-or::before,.upload-or::after{content:"";flex:1;height:1px;background:var(--line);}
+  .admin-item{
+    display:grid;grid-template-columns:64px 1fr auto;gap:14px;align-items:center;
+    padding:12px 0;border-bottom:1px solid var(--line);
+  }
+  .admin-item img{width:64px;height:64px;object-fit:cover;border:1px solid var(--line);background:#e9ded3;}
+  .admin-item .info b{font-family:'Oswald',sans-serif;font-size:15px;}
+  .admin-item .info .meta{font-size:12px;color:var(--ink-soft);font-family:'Space Mono',monospace;}
+  .waitlist-names{font-size:12.5px;color:var(--ink-soft);margin-top:4px;}
+  .admin-actions{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;}
+  select.status-select{font-family:'Space Mono',monospace;font-size:11.5px;padding:4px 6px;border:1px solid var(--line);}
+
+  @media(max-width:600px){
+    .row-grid{grid-template-columns:1fr;}
+    .manifest-top{padding-right:0;}
+    .user-badge{position:static;text-align:left;max-width:none;margin-top:10px;}
+    .admin-item{grid-template-columns:48px 1fr;}
+    .admin-actions{grid-column:1/-1;justify-content:flex-start;margin-top:8px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap" id="shopView">
+  <div class="manifest-head">
+    <div class="manifest-top">
+      <div>
+        <h1 id="siteTitle">物資清單</h1>
+        <div class="sub">看照片、按「加入候補」，我會依排隊順序出貨 · 免費贈送</div>
+      </div>
+      <div class="stamp-count"><b id="itemCountNum">0</b>件物品上架中</div>
+    </div>
+    <div class="user-badge" id="userBadge"></div>
+  </div>
+
+  <div class="announce-bar" id="announceBar" style="display:none;">
+    <span class="eyebrow">公告</span>
+    <span id="announceText"></span>
+  </div>
+
+  <div class="filter-bar" id="filterBar"></div>
+  <div class="grid" id="shopGrid"></div>
+  <div class="empty" id="shopEmpty" style="display:none;">目前還沒有物品上架，請稍後再來看看。</div>
+</div>
+
+<div class="toast" id="toast"></div>
+<a class="admin-fab" id="adminFab" href="#admin" onclick="showAdmin()">⚙ 後台管理</a>
+
+<div class="wrap" id="adminView">
+  <div class="admin-bar">
+    <div class="tag-title">後台管理</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-outline btn-small" onclick="adminLogout()">登出管理</button>
+      <button class="btn btn-outline btn-small" onclick="showShop()">← 回到用戶頁面</button>
+    </div>
+  </div>
+
+  <div id="adminLocked" class="panel">
+    <h4>請輸入管理密碼</h4>
+    <div class="field"><input type="password" id="adminPw" placeholder="密碼" /></div>
+    <button class="btn" onclick="tryLogin()">登入</button>
+    <div class="msg err" id="loginMsg"></div>
+  </div>
+
+  <div id="adminUnlocked" style="display:none;">
+
+    <div class="panel">
+      <h4 style="display:flex;justify-content:space-between;align-items:center;">
+        <span>Dashboard 總覽</span>
+        <button class="btn btn-outline btn-small" onclick="renderDashboard()">重新整理數字</button>
+      </h4>
+      <div id="dashboardGrid" class="theme-grid"></div>
+    </div>
+
+    <div class="panel">
+      <h4>變更管理密碼</h4>
+      <div class="row-grid">
+        <div class="field"><label>新密碼</label><input type="password" id="newAdminPw" placeholder="輸入新密碼"/></div>
+        <div class="field"><label>再輸入一次</label><input type="password" id="newAdminPw2" placeholder="確認新密碼"/></div>
+      </div>
+      <button class="btn" onclick="changeAdminPassword()">儲存新密碼</button>
+      <div class="msg ok" id="pwMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h4>網站外觀設定</h4>
+      <div class="field"><label>網站名稱</label><input id="siteNameInput" placeholder="例：小明的物資清單"/></div>
+      <div class="theme-grid">
+        <div class="field"><label>背景色</label><input type="color" id="themePaper"/></div>
+        <div class="field"><label>卡片底色</label><input type="color" id="themeCard"/></div>
+        <div class="field"><label>文字/主色</label><input type="color" id="themeInk"/></div>
+        <div class="field"><label>強調色（候補/優先）</label><input type="color" id="themeAccent"/></div>
+        <div class="field"><label>警示色（刪除/已送出）</label><input type="color" id="themeDanger"/></div>
+        <div class="field"><label>公告強調色</label><input type="color" id="themeHighlight"/></div>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn" onclick="saveAppearance()">儲存外觀設定</button>
+        <button class="btn btn-outline" onclick="resetAppearance()">恢復預設配色</button>
+      </div>
+      <div class="msg ok" id="appearanceMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h4>公告欄</h4>
+      <div class="field"><textarea id="announceInput" placeholder="例：7/20 前完成領取的物品優先出貨，謝謝大家～"></textarea></div>
+      <button class="btn" onclick="saveAnnouncement()">儲存公告</button>
+      <div class="msg ok" id="announceMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h4>新增物品</h4>
+      <div class="row-grid">
+        <div class="field"><label>名稱</label><input id="newName" placeholder="例：IKEA 書桌"/></div>
+        <div class="field">
+          <label>分類</label>
+          <select id="newCat"></select>
+          <div style="display:flex;gap:6px;margin-top:6px;">
+            <input id="newCatCustom" placeholder="新增分類名稱"/>
+            <button class="btn btn-outline btn-small" onclick="addCategory()">+ 新增分類</button>
+          </div>
+        </div>
+      </div>
+      <div class="field"><label>描述</label><textarea id="newDesc" placeholder="簡短描述、狀況、尺寸..."></textarea></div>
+      <div class="field">
+        <label>照片連結（可直接貼 Google Drive 分享連結，會自動轉換）</label>
+        <input id="newImg" placeholder="https://drive.google.com/file/d/.../view?usp=sharing"/>
+      </div>
+      <div class="upload-or">或</div>
+      <div class="field">
+        <label>從手機相簿上傳照片</label>
+        <input type="file" id="newImgFile" accept="image/*"/>
+      </div>
+      <button class="btn" onclick="addItem()">上架物品</button>
+      <div class="msg ok" id="addMsg"></div>
+    </div>
+
+    <div class="panel">
+      <h4>物品與候補名單</h4>
+      <div id="adminList"></div>
+    </div>
+
+    <div class="panel">
+      <h4 style="display:flex;justify-content:space-between;align-items:center;">
+        <span>依人整理的候補名單（自動排出每人最優先的物品）</span>
+        <button class="btn btn-outline btn-small" onclick="exportCSV()">匯出候補名單 CSV</button>
+      </h4>
+      <div id="adminPeopleList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="loginOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeLogin()">✕</button>
+    <h3>登入</h3>
+    <p class="hint">登入一次，之後點「加入候補」就不用再打字。第二次來訪也可以用同樣的姓名＋密碼登入。</p>
+    <div class="field"><label>姓名</label><input id="loginName" placeholder="請輸入全名"/></div>
+    <div class="field"><label>密碼（生日四碼）</label><input id="loginCode" maxlength="4" inputmode="numeric" placeholder="請輸入生日 ex.0101"/></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeLogin()">取消</button>
+      <button class="btn" onclick="submitLogin()">登入</button>
+    </div>
+    <div class="msg err" id="loginModalMsg"></div>
+  </div>
+</div>
+
+<div class="overlay" id="myJoinsOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeMyJoins()">✕</button>
+    <h3>我的候補</h3>
+    <p class="hint">這裡列出你目前候補中的物品，可以直接取消</p>
+    <div id="myJoinsList"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeMyJoins()">關閉</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <button class="close-x" onclick="closeEdit()">✕</button>
+    <h3>編輯物品</h3>
+    <div class="field"><label>名稱</label><input id="editName"/></div>
+    <div class="field">
+      <label>分類</label>
+      <select id="editCat"></select>
+    </div>
+    <div class="field"><label>描述</label><textarea id="editDesc"></textarea></div>
+    <div class="field">
+      <label>照片連結（留空 = 不更換照片）</label>
+      <input id="editImg" placeholder="https://drive.google.com/file/d/.../view?usp=sharing"/>
+    </div>
+    <div class="upload-or">或</div>
+    <div class="field">
+      <label>從手機相簿重新上傳（留空 = 不更換照片）</label>
+      <input type="file" id="editImgFile" accept="image/*"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeEdit()">取消</button>
+      <button class="btn" onclick="saveEditItem()">儲存變更</button>
+    </div>
+    <div class="msg err" id="editMsg"></div>
+  </div>
+</div>
+
+<script>
+// ============ 後端設定：Supabase ============
+// 1. 到 https://supabase.com 建立一個免費專案
+// 2. 在 SQL Editor 執行本檔案最下面附的建表 SQL（或看我的說明訊息）
+// 3. Project Settings → API，把 Project URL 和 anon public key 貼到下面兩行
+const SUPABASE_URL = "https://gknemrllllniaxeszyvl.supabase.co";       // ← 換成你的 Supabase Project URL
+const SUPABASE_ANON_KEY = "sb_publishable_ZXD9bDlnw0rdnRgyiUzEXw_Y6oo82Zu";               // ← 換成你的 anon public key
+
+// 共用資料（商品、候補名單、公告...）存在 Supabase；
+// 個人資料（這台裝置記住的登入身份）存在瀏覽器的 localStorage。
+const supabaseApi = {
+  async get(key){
+    const url = `${SUPABASE_URL}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}&select=value`;
+    const res = await fetch(url, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if(!res.ok) throw new Error('Supabase 讀取失敗：' + res.status);
+    const rows = await res.json();
+    return rows.length ? rows[0].value : null;
+  },
+  async set(key, value){
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kv_store`, {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify({ key, value, updated_at: new Date().toISOString() })
+    });
+    if(!res.ok) throw new Error('Supabase 寫入失敗：' + res.status);
+  },
+  async del(key){
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/kv_store?key=eq.${encodeURIComponent(key)}`, {
+      method: 'DELETE',
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+    if(!res.ok) throw new Error('Supabase 刪除失敗：' + res.status);
+  }
+};
+
+// 與原本 window.storage 相同的介面：get(key, shared) / set(key, value, shared) / delete(key, shared)
+// shared=true  → 存 Supabase（所有人共用，重整/關閉/換裝置都不會消失）
+// shared=false → 存這台瀏覽器的 localStorage（只有這台裝置看得到，同瀏覽器重整不會消失）
+const storage = {
+  async get(key, shared){
+    if(shared){
+      const value = await supabaseApi.get(key);
+      return value === null ? null : { key, value: JSON.stringify(value), shared:true };
+    }else{
+      const raw = localStorage.getItem(key);
+      return raw === null ? null : { key, value: raw, shared:false };
+    }
+  },
+  async set(key, value, shared){
+    if(shared){
+      await supabaseApi.set(key, JSON.parse(value));
+    }else{
+      localStorage.setItem(key, value);
+    }
+    return { key, value, shared };
+  },
+  async delete(key, shared){
+    if(shared){ await supabaseApi.del(key); }
+    else{ localStorage.removeItem(key); }
+    return { key, deleted:true, shared };
+  }
+};
+
+const DEFAULT_ADMIN_PASSWORD = "5525";
+const REQUIRE_ADMIN_PASSWORD = true; // 已設定密碼 5525，後台需要密碼才能進入
+const DEFAULT_SITE_NAME = '物資清單';
+const DEFAULT_THEME = {
+  paper:'#EAC7B3', card:'#FFFFFF', ink:'#2E4A63',
+  accent:'#7FA8C2', danger:'#C9705A', highlight:'#E3D48A'
+};
+
+let items = [];
+let waitlist = {};
+let myJoins = [];         // [{itemId, joinId}] - 個人儲存，記錄這個瀏覽器候補過哪些物品
+let activeCategory = '全部';
+let announcement = '';
+let siteName = DEFAULT_SITE_NAME;
+let theme = {};
+let directory = {};       // 共用的姓名+密碼名冊，key = 姓名(normalize) -> {name, code}
+let myProfile = null;     // {name, code} - 個人儲存，這台裝置記住的登入身份
+let pendingJoinItemId = null;
+let adminSession = false;
+let imageCache = {};      // itemId -> dataURL（僅限手機上傳的照片）
+let categories = [];      // 共用的分類清單
+let adminPassword = DEFAULT_ADMIN_PASSWORD;
+let stats = { visits: 0, joins: 0, cancels: 0 }; // 共用的簡易站台統計
+const DEFAULT_CATEGORIES = ['杯子','家電','廚房用品','酒'];
+
+function genId(){ return 'it_' + Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function normName(n){ return (n||'').trim().toLowerCase(); }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(()=> t.classList.remove('show'), 3200);
+}
+
+function extractDriveId(url){
+  if(!url) return null;
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]{10,})/) || url.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);
+  return (m && m[1]) ? m[1] : null;
+}
+function driveImageCandidates(id){
+  // Google 對這幾種連結格式的支援度不太穩定，依序嘗試，任一種失敗就換下一種
+  return [
+    `https://drive.google.com/thumbnail?id=${id}&sz=w1000`,
+    `https://lh3.googleusercontent.com/d/${id}=w1000`,
+    `https://drive.google.com/uc?export=view&id=${id}`
+  ];
+}
+function driveImgFallback(img, id, context){
+  const candidates = driveImageCandidates(id);
+  const idx = parseInt(img.dataset.tryIndex || '0', 10) + 1;
+  if(idx < candidates.length){
+    img.dataset.tryIndex = idx;
+    img.src = candidates[idx];
+  }else if(context === 'admin'){
+    img.outerHTML = '<div class="admin-item-noimg" style="width:64px;height:64px;background:#e9ded3;display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--ink-soft);text-align:center;">載入失敗</div>';
+  }else{
+    img.outerHTML = '<div class="card-img placeholder">圖片載入失敗，請確認 Google Drive 分享權限設為「知道連結的人皆可檢視」</div>';
+  }
+}
+
+async function normalizeToWebImage(file){
+  const looksHeic = /image\/hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name || '');
+  if(!looksHeic) return file;
+  if(typeof heic2any !== 'function'){
+    throw new Error('HEIC 轉檔元件載入失敗，請改用 JPG 照片再試一次');
+  }
+  try{
+    const converted = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.85 });
+    return Array.isArray(converted) ? converted[0] : converted;
+  }catch(e){
+    throw new Error('HEIC 轉檔失敗，請改用 JPG 格式的照片');
+  }
+}
+
+async function fileToCompressedDataUrl(file, maxDim=800, quality=0.72){
+  const normalized = await normalizeToWebImage(file);
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let w = img.width, h = img.height;
+        if(w > maxDim || h > maxDim){
+          if(w >= h){ h = Math.round(h * maxDim / w); w = maxDim; }
+          else{ w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = () => reject(new Error('圖片讀取失敗'));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error('檔案讀取失敗'));
+    reader.readAsDataURL(normalized);
+  });
+}
+
+async function loadData(){
+  try{ const r = await storage.get('items', true); items = r ? JSON.parse(r.value) : []; }
+  catch(e){ items = []; }
+  try{ const r = await storage.get('waitlist', true); waitlist = r ? JSON.parse(r.value) : {}; }
+  catch(e){ waitlist = {}; }
+  try{ const r = await storage.get('my-joins', false); myJoins = r ? JSON.parse(r.value) : []; }
+  catch(e){ myJoins = []; }
+  try{ const r = await storage.get('announcement', true); announcement = r ? JSON.parse(r.value) : ''; }
+  catch(e){ announcement = ''; }
+  try{ const r = await storage.get('site-name', true); siteName = r ? JSON.parse(r.value) : DEFAULT_SITE_NAME; }
+  catch(e){ siteName = DEFAULT_SITE_NAME; }
+  try{ const r = await storage.get('theme', true); theme = r ? JSON.parse(r.value) : {}; }
+  catch(e){ theme = {}; }
+  try{ const r = await storage.get('directory', true); directory = r ? JSON.parse(r.value) : {}; }
+  catch(e){ directory = {}; }
+  try{ const r = await storage.get('my-profile', false); myProfile = r ? JSON.parse(r.value) : null; }
+  catch(e){ myProfile = null; }
+  try{ const r = await storage.get('admin-session', false); adminSession = r ? JSON.parse(r.value)===true : false; }
+  catch(e){ adminSession = false; }
+  try{ const r = await storage.get('categories', true); categories = r ? JSON.parse(r.value) : []; }
+  catch(e){ categories = []; }
+  if(categories.length === 0){ categories = DEFAULT_CATEGORIES.slice(); await saveCategories(); }
+  try{ const r = await storage.get('admin-password', true); adminPassword = r ? JSON.parse(r.value) : DEFAULT_ADMIN_PASSWORD; }
+  catch(e){ adminPassword = DEFAULT_ADMIN_PASSWORD; }
+  try{ const r = await storage.get('stats', true); stats = r ? JSON.parse(r.value) : {visits:0, joins:0, cancels:0}; }
+  catch(e){ stats = {visits:0, joins:0, cancels:0}; }
+
+  // 訪客計數：每台裝置只算一次，避免同一人重整頁面就一直累加
+  try{
+    const visited = await storage.get('has-visited', false);
+    if(!visited){
+      stats.visits = (stats.visits||0) + 1;
+      await saveStats();
+      await storage.set('has-visited', 'true', false);
+    }
+  }catch(e){ /* ignore */ }
+
+  if(items.length === 0){
+    items = [
+      {id:genId(), name:'示範：實木邊桌', category:'家具', desc:'這是示範資料，後台可以刪除並上架你自己的物品。', imageUrl:'', driveId:null, imageSource:'url', status:'available', createdAt:Date.now()},
+    ];
+    await saveItems();
+  }
+  applyTheme();
+  render();
+}
+
+async function saveItems(){ try{ await storage.set('items', JSON.stringify(items), true); }catch(e){ console.error(e); } }
+async function saveWaitlist(){ try{ await storage.set('waitlist', JSON.stringify(waitlist), true); }catch(e){ console.error(e); } }
+async function saveMyJoins(){ try{ await storage.set('my-joins', JSON.stringify(myJoins), false); }catch(e){ console.error(e); } }
+async function saveAnnouncementStorage(){ try{ await storage.set('announcement', JSON.stringify(announcement), true); }catch(e){ console.error(e); } }
+async function saveSiteName(){ try{ await storage.set('site-name', JSON.stringify(siteName), true); }catch(e){ console.error(e); } }
+async function saveTheme(){ try{ await storage.set('theme', JSON.stringify(theme), true); }catch(e){ console.error(e); } }
+async function saveDirectory(){ try{ await storage.set('directory', JSON.stringify(directory), true); }catch(e){ console.error(e); } }
+async function saveAdminPassword(){ try{ await storage.set('admin-password', JSON.stringify(adminPassword), true); }catch(e){ console.error(e); } }
+async function saveStats(){ try{ await storage.set('stats', JSON.stringify(stats), true); }catch(e){ console.error(e); } }
+async function saveMyProfile(){ try{ await storage.set('my-profile', JSON.stringify(myProfile), false); }catch(e){ console.error(e); } }
+async function saveAdminSession(val){ try{ await storage.set('admin-session', JSON.stringify(val), false); }catch(e){ console.error(e); } }
+async function saveCategories(){ try{ await storage.set('categories', JSON.stringify(categories), true); }catch(e){ console.error(e); } }
+
+function myJoinFor(itemId){ return myJoins.find(j=>j.itemId===itemId); }
+
+function applyTheme(){
+  const t = Object.assign({}, DEFAULT_THEME, theme||{});
+  const root = document.documentElement.style;
+  root.setProperty('--paper', t.paper);
+  root.setProperty('--card', t.card);
+  root.setProperty('--ink', t.ink);
+  root.setProperty('--moss', t.accent);
+  root.setProperty('--tag-red', t.danger);
+  root.setProperty('--gold', t.highlight);
+}
+
+function statusLabel(s){ return s==='shipped' ? '已出貨' : s==='reserved' ? '保留中' : '可候補'; }
+
+function render(){
+  document.getElementById('siteTitle').textContent = siteName || DEFAULT_SITE_NAME;
+  document.title = siteName || DEFAULT_SITE_NAME;
+  renderAnnouncement();
+  renderUserBadge();
+  renderShop();
+  if(document.getElementById('adminUnlocked').style.display !== 'none') renderAdmin();
+  document.getElementById('itemCountNum').textContent = items.filter(i=>i.status!=='shipped').length;
+  hydrateUploads();
+}
+
+function renderAnnouncement(){
+  const bar = document.getElementById('announceBar');
+  if(announcement && announcement.trim()){
+    bar.style.display = 'block';
+    document.getElementById('announceText').textContent = announcement;
+  }else{
+    bar.style.display = 'none';
+  }
+}
+
+function renderUserBadge(){
+  const el = document.getElementById('userBadge');
+  if(myProfile && myProfile.name){
+    el.innerHTML = `哈囉，<b>${escapeHtml(myProfile.name)}</b><br><a class="logout-link" onclick="openMyJoins()">我的候補</a> · <a class="logout-link" onclick="logoutUser()">登出</a>`;
+  }else{
+    el.innerHTML = `<a onclick="openLogin()">登入</a>`;
+  }
+}
+
+function renderFilterBar(){
+  const bar = document.getElementById('filterBar');
+  const cats = Array.from(new Set(items.map(i=>i.category||'未分類')));
+  if(cats.length <= 1){ bar.innerHTML=''; return; }
+  const all = ['全部', ...cats];
+  bar.innerHTML = all.map(c=>
+    `<button class="filter-chip ${activeCategory===c?'active':''}" onclick="setFilter('${c.replace(/'/g,"\\'")}')">${escapeHtml(c)}</button>`
+  ).join('');
+}
+function setFilter(c){ activeCategory = c; renderShop(); hydrateUploads(); }
+
+function shopImageHtml(it){
+  if(it.imageSource === 'upload'){
+    return `<div class="card-img placeholder" data-upload-id="${it.id}">載入照片中…</div>`;
+  }
+  if(it.driveId){
+    const src = driveImageCandidates(it.driveId)[0];
+    return `<img class="card-img" data-try-index="0" src="${src}" alt="${escapeHtml(it.name)}" onerror="driveImgFallback(this,'${it.driveId}')"/>`;
+  }
+  if(it.imageUrl){
+    return `<img class="card-img" src="${it.imageUrl}" alt="${escapeHtml(it.name)}" onerror="this.outerHTML='<div class=\\'card-img placeholder\\'>圖片載入失敗</div>'"/>`;
+  }
+  return `<div class="card-img placeholder">尚無照片</div>`;
+}
+function adminImageHtml(it){
+  if(it.imageSource === 'upload'){
+    return `<div class="admin-item-noimg" data-upload-id="${it.id}" style="width:64px;height:64px;background:#e9ded3;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--ink-soft);text-align:center;">載入中</div>`;
+  }
+  if(it.driveId){
+    const src = driveImageCandidates(it.driveId)[0];
+    return `<img data-try-index="0" src="${src}" onerror="driveImgFallback(this,'${it.driveId}','admin')"/>`;
+  }
+  return it.imageUrl
+    ? `<img src="${it.imageUrl}" onerror="this.style.opacity=0.3"/>`
+    : `<div class="admin-item-noimg" style="width:64px;height:64px;background:#e9ded3;"></div>`;
+}
+
+function renderShop(){
+  renderFilterBar();
+  const grid = document.getElementById('shopGrid');
+  let visible = items;
+  if(activeCategory !== '全部') visible = visible.filter(i => (i.category||'未分類') === activeCategory);
+  document.getElementById('shopEmpty').style.display = visible.length ? 'none' : 'block';
+  grid.innerHTML = visible.map(it=>{
+    const list = waitlist[it.id]||[];
+    const count = list.length;
+    const mine = myJoinFor(it.id);
+    const shipped = it.status === 'shipped';
+    let myPosition = '';
+    if(mine){
+      const idx = list.findIndex(w=>w.id===mine.joinId);
+      if(idx >= 0) myPosition = `<div class="my-position">你排第 ${idx+1} 位</div>`;
+    }
+    let btn;
+    if(shipped){ btn = `<button class="btn" disabled>已送出</button>`; }
+    else if(mine){ btn = `<button class="btn btn-joined" onclick="cancelJoin('${it.id}')">已候補（點此取消）</button>`; }
+    else{ btn = `<button class="btn" onclick="openJoin('${it.id}')">加入候補</button>`; }
+    return `
+    <div class="card ${shipped?'card-locked':''}">
+      ${shipped ? '<div class="shipped-stamp">已送出</div>' : ''}
+      ${shopImageHtml(it)}
+      <div class="card-body">
+        <div class="card-cat">${escapeHtml(it.category||'未分類')}</div>
+        <h3 class="card-title">${escapeHtml(it.name)}</h3>
+        <div class="card-desc">${escapeHtml(it.desc||'')}</div>
+        <div class="card-foot">
+          <span class="status-tag status-${it.status}">${statusLabel(it.status)}</span>
+          <span class="queue-badge">${count} 人排隊</span>
+        </div>
+        ${myPosition}
+        ${btn}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function hydrateUploads(){
+  const nodes = Array.from(document.querySelectorAll('[data-upload-id]'));
+  for(const node of nodes){
+    const id = node.getAttribute('data-upload-id');
+    let src = imageCache[id];
+    if(!src){
+      try{
+        const r = await storage.get('img:'+id, true);
+        if(r){ src = r.value; imageCache[id] = src; }
+      }catch(e){ /* not found */ }
+    }
+    if(!node.isConnected) continue;
+    if(src){
+      const img = document.createElement('img');
+      img.src = src;
+      if(node.classList.contains('card-img')){ img.className = 'card-img'; img.alt=''; }
+      node.replaceWith(img);
+    }else{
+      node.textContent = '圖片載入失敗';
+    }
+  }
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function openJoin(itemId){
+  if(myProfile && myProfile.name){ doJoin(itemId); }
+  else{ pendingJoinItemId = itemId; openLogin(); }
+}
+
+function openLogin(){
+  document.getElementById('loginName').value = myProfile ? myProfile.name : '';
+  document.getElementById('loginCode').value = myProfile ? (myProfile.code||'') : '';
+  document.getElementById('loginModalMsg').textContent = '';
+  document.getElementById('loginOverlay').classList.add('show');
+}
+function closeLogin(){
+  document.getElementById('loginOverlay').classList.remove('show');
+  pendingJoinItemId = null;
+}
+async function submitLogin(){
+  const name = document.getElementById('loginName').value.trim();
+  const code = document.getElementById('loginCode').value.trim();
+  const msg = document.getElementById('loginModalMsg');
+  if(!name){ msg.textContent = '請輸入全名'; return; }
+  if(!/^\d{4}$/.test(code)){ msg.textContent = '密碼請輸入生日四碼，例如 0101'; return; }
+
+  const key = normName(name);
+  const existing = directory[key];
+  if(existing){
+    if(existing.code !== code){
+      msg.textContent = '這個姓名已經登入過，生日密碼不正確；如果不是你本人，請用其他稱呼登入';
+      return;
+    }
+    myProfile = {name: existing.name, code};
+  }else{
+    directory[key] = {name, code};
+    myProfile = {name, code};
+  }
+  await saveDirectory();
+  await saveMyProfile();
+  syncMyJoinsFromShared();
+  await saveMyJoins();
+  document.getElementById('loginOverlay').classList.remove('show');
+  renderUserBadge();
+  if(pendingJoinItemId){
+    const target = pendingJoinItemId;
+    pendingJoinItemId = null;
+    await doJoin(target);
+  }else{
+    render();
+    showToast(`已登入：${name}（自動找回 ${myJoins.length} 件候補紀錄）`);
+  }
+}
+
+function syncMyJoinsFromShared(){
+  if(!myProfile) return;
+  const key = normName(myProfile.name);
+  const matched = [];
+  items.forEach(it=>{
+    const wl = waitlist[it.id] || [];
+    wl.forEach(w=>{
+      if(normName(w.name) === key) matched.push({itemId: it.id, joinId: w.id});
+    });
+  });
+  myJoins = matched;
+}
+async function logoutUser(){
+  if(!confirm('登出後，這台裝置的候補紀錄仍會保留，下次要重新輸入姓名＋密碼才能快速候補，確定登出？')) return;
+  myProfile = null;
+  await saveMyProfile();
+  render();
+}
+
+function openMyJoins(){
+  renderMyJoinsList();
+  document.getElementById('myJoinsOverlay').classList.add('show');
+}
+function closeMyJoins(){
+  document.getElementById('myJoinsOverlay').classList.remove('show');
+}
+function renderMyJoinsList(){
+  const el = document.getElementById('myJoinsList');
+  if(!myJoins.length){ el.innerHTML = '<div class="empty">目前沒有候補中的物品</div>'; return; }
+  el.innerHTML = myJoins.map(j=>{
+    const it = items.find(i=>i.id===j.itemId);
+    if(!it) return '';
+    const wl = waitlist[it.id] || [];
+    const idx = wl.findIndex(w=>w.id===j.joinId);
+    const pos = idx >= 0 ? `第 ${idx+1} 位` : '（已不在名單中）';
+    return `
+    <div class="person-item-row" style="border-bottom:1px solid var(--line);padding:8px 0;">
+      <span style="flex:1;">${escapeHtml(it.name)} <span class="pos-badge">${pos}</span></span>
+      <button class="btn btn-small btn-red" onclick="cancelJoin('${it.id}'); renderMyJoinsList();">取消候補</button>
+    </div>`;
+  }).join('');
+}
+
+async function doJoin(itemId){
+  if(myJoinFor(itemId)){ showToast('你已經候補過這件了'); return; }
+  const it = items.find(i=>i.id===itemId);
+  if(!it || it.status === 'shipped') return;
+  const joinId = genId();
+  if(!waitlist[itemId]) waitlist[itemId] = [];
+  waitlist[itemId].push({id: joinId, name: myProfile.name, joinedAt: Date.now()});
+  const position = waitlist[itemId].length;
+  myJoins.push({itemId, joinId});
+  stats.joins = (stats.joins||0) + 1;
+  await saveWaitlist();
+  await saveStats();
+  await saveMyJoins();
+  await saveMyJoins();
+  render();
+  showToast(`已加入候補！你目前排第 ${position} 位`);
+}
+
+async function cancelJoin(itemId){
+  const mine = myJoinFor(itemId);
+  if(!mine) return;
+  if(!confirm('確定要取消候補這件物品嗎？')) return;
+  if(waitlist[itemId]) waitlist[itemId] = waitlist[itemId].filter(w=>w.id!==mine.joinId);
+  myJoins = myJoins.filter(j=>j.itemId!==itemId);
+  stats.cancels = (stats.cancels||0) + 1;
+  await saveWaitlist();
+  await saveStats();
+  await saveMyJoins();
+  render();
+  showToast('已取消候補');
+}
+
+function showAdmin(){
+  document.getElementById('shopView').style.display='none';
+  document.getElementById('adminView').style.display='block';
+  document.getElementById('adminFab').style.display='none';
+  if(adminSession || !REQUIRE_ADMIN_PASSWORD){
+    document.getElementById('adminLocked').style.display='none';
+    document.getElementById('adminUnlocked').style.display='block';
+    fillAdminFields();
+    renderAdmin();
+  }else{
+    document.getElementById('adminLocked').style.display='block';
+    document.getElementById('adminUnlocked').style.display='none';
+  }
+}
+function showShop(){
+  document.getElementById('adminView').style.display='none';
+  document.getElementById('shopView').style.display='block';
+  document.getElementById('adminFab').style.display='block';
+  location.hash='';
+}
+function fillAdminFields(){
+  document.getElementById('announceInput').value = announcement || '';
+  document.getElementById('siteNameInput').value = siteName || DEFAULT_SITE_NAME;
+  const t = Object.assign({}, DEFAULT_THEME, theme||{});
+  document.getElementById('themePaper').value = t.paper;
+  document.getElementById('themeCard').value = t.card;
+  document.getElementById('themeInk').value = t.ink;
+  document.getElementById('themeAccent').value = t.accent;
+  document.getElementById('themeDanger').value = t.danger;
+  document.getElementById('themeHighlight').value = t.highlight;
+  renderCategorySelects();
+  renderDashboard();
+}
+function renderDashboard(){
+  const el = document.getElementById('dashboardGrid');
+  if(!el) return;
+  const total = items.length;
+  const available = items.filter(i=>i.status==='available').length;
+  const reserved = items.filter(i=>i.status==='reserved').length;
+  const shipped = items.filter(i=>i.status==='shipped').length;
+  const activeWaiters = Object.values(waitlist).reduce((sum, wl)=>sum + (wl?wl.length:0), 0);
+  const registeredPeople = Object.keys(directory).length;
+  const stat = (num, label) => `<div class="stat-box"><div class="num">${num}</div><div class="label">${label}</div></div>`;
+  el.innerHTML = [
+    stat(total, '物品總數'),
+    stat(available, '可候補'),
+    stat(reserved, '保留中'),
+    stat(shipped, '已出貨'),
+    stat(activeWaiters, '目前候補總人次'),
+    stat(stats.joins||0, '累計候補次數'),
+    stat(stats.cancels||0, '累計取消次數'),
+    stat(registeredPeople, '登入過的訪客數'),
+    stat(stats.visits||0, '造訪人次（約略，依裝置計）'),
+  ].join('');
+}
+function categoryOptionsHtml(selected){
+  return categories.map(c=>`<option value="${escapeHtml(c)}" ${c===selected?'selected':''}>${escapeHtml(c)}</option>`).join('');
+}
+function renderCategorySelects(){
+  const newCat = document.getElementById('newCat');
+  if(newCat){ const cur = newCat.value; newCat.innerHTML = categoryOptionsHtml(); if(cur) newCat.value = cur; }
+  const editCat = document.getElementById('editCat');
+  if(editCat){ const cur = editCat.value; editCat.innerHTML = categoryOptionsHtml(); if(cur) editCat.value = cur; }
+}
+async function addCategory(){
+  const input = document.getElementById('newCatCustom');
+  const name = input.value.trim();
+  if(!name) return;
+  if(!categories.includes(name)){
+    categories.push(name);
+    await saveCategories();
+  }
+  renderCategorySelects();
+  document.getElementById('newCat').value = name;
+  input.value = '';
+}
+async function tryLogin(){
+  const pw = document.getElementById('adminPw').value;
+  if(pw === adminPassword){
+    adminSession = true;
+    await saveAdminSession(true);
+    document.getElementById('adminLocked').style.display='none';
+    document.getElementById('adminUnlocked').style.display='block';
+    fillAdminFields();
+    renderAdmin();
+  }else{
+    document.getElementById('loginMsg').textContent = '密碼錯誤';
+  }
+}
+async function changeAdminPassword(){
+  const p1 = document.getElementById('newAdminPw').value.trim();
+  const p2 = document.getElementById('newAdminPw2').value.trim();
+  const msg = document.getElementById('pwMsg');
+  if(!p1){ msg.className='msg err'; msg.textContent='請輸入新密碼'; return; }
+  if(p1 !== p2){ msg.className='msg err'; msg.textContent='兩次輸入的密碼不一致'; return; }
+  adminPassword = p1;
+  await saveAdminPassword();
+  document.getElementById('newAdminPw').value = '';
+  document.getElementById('newAdminPw2').value = '';
+  msg.className='msg ok'; msg.textContent = '密碼已更新，下次登入請用新密碼';
+}
+async function adminLogout(){
+  adminSession = false;
+  await saveAdminSession(false);
+  document.getElementById('adminPw').value = '';
+  showAdmin();
+}
+async function saveAnnouncement(){
+  announcement = document.getElementById('announceInput').value;
+  await saveAnnouncementStorage();
+  renderAnnouncement();
+  const msg = document.getElementById('announceMsg');
+  msg.textContent = '已儲存';
+  setTimeout(()=>{ msg.textContent=''; }, 2000);
+}
+async function saveAppearance(){
+  siteName = document.getElementById('siteNameInput').value.trim() || DEFAULT_SITE_NAME;
+  theme = {
+    paper: document.getElementById('themePaper').value,
+    card: document.getElementById('themeCard').value,
+    ink: document.getElementById('themeInk').value,
+    accent: document.getElementById('themeAccent').value,
+    danger: document.getElementById('themeDanger').value,
+    highlight: document.getElementById('themeHighlight').value,
+  };
+  await saveSiteName();
+  await saveTheme();
+  applyTheme();
+  document.getElementById('siteTitle').textContent = siteName;
+  document.title = siteName;
+  const msg = document.getElementById('appearanceMsg');
+  msg.textContent = '已儲存';
+  setTimeout(()=>{ msg.textContent=''; }, 2000);
+}
+async function resetAppearance(){
+  if(!confirm('確定要恢復成預設站名與配色嗎？')) return;
+  siteName = DEFAULT_SITE_NAME;
+  theme = {};
+  await saveSiteName();
+  await saveTheme();
+  applyTheme();
+  fillAdminFields();
+  document.getElementById('siteTitle').textContent = siteName;
+  document.title = siteName;
+}
+
+async function addItem(){
+  const name = document.getElementById('newName').value.trim();
+  const cat = document.getElementById('newCat').value.trim();
+  const desc = document.getElementById('newDesc').value.trim();
+  const imgRaw = document.getElementById('newImg').value.trim();
+  const fileInput = document.getElementById('newImgFile');
+  const file = fileInput.files[0];
+  const addMsg = document.getElementById('addMsg');
+  if(!name){ addMsg.className='msg err'; addMsg.textContent='請至少填寫名稱'; return; }
+
+  const id = genId();
+  let imageUrl = '', driveId = null, imageSource = 'url';
+
+  if(file){
+    addMsg.className='msg ok'; addMsg.textContent='正在處理照片...';
+    try{
+      const dataUrl = await fileToCompressedDataUrl(file);
+      await storage.set('img:'+id, dataUrl, true);
+      imageCache[id] = dataUrl;
+      imageSource = 'upload';
+    }catch(e){
+      addMsg.className='msg err'; addMsg.textContent = e.message || '照片處理失敗，請換一張再試';
+      return;
+    }
+  }else if(imgRaw){
+    driveId = extractDriveId(imgRaw);
+    if(!driveId) imageUrl = imgRaw;
+  }
+
+  items.push({ id, name, category: cat, desc, imageUrl, driveId, imageSource, status:'available', createdAt: Date.now() });
+  await saveItems();
+  document.getElementById('newName').value='';
+  document.getElementById('newDesc').value='';
+  document.getElementById('newImg').value='';
+  fileInput.value='';
+  addMsg.className='msg ok'; addMsg.textContent='已上架！';
+  render();
+}
+
+let editTargetId = null;
+function openEditItem(id){
+  const it = items.find(i=>i.id===id);
+  if(!it) return;
+  editTargetId = id;
+  document.getElementById('editName').value = it.name || '';
+  document.getElementById('editDesc').value = it.desc || '';
+  document.getElementById('editImg').value = '';
+  document.getElementById('editImgFile').value = '';
+  document.getElementById('editMsg').textContent = '';
+  renderCategorySelects();
+  document.getElementById('editCat').value = it.category || categories[0] || '';
+  document.getElementById('editOverlay').classList.add('show');
+}
+function closeEdit(){
+  document.getElementById('editOverlay').classList.remove('show');
+  editTargetId = null;
+}
+async function saveEditItem(){
+  const it = items.find(i=>i.id===editTargetId);
+  if(!it) return;
+  const name = document.getElementById('editName').value.trim();
+  const msg = document.getElementById('editMsg');
+  if(!name){ msg.textContent = '請至少填寫名稱'; return; }
+  it.name = name;
+  it.category = document.getElementById('editCat').value;
+  it.desc = document.getElementById('editDesc').value.trim();
+
+  const imgRaw = document.getElementById('editImg').value.trim();
+  const file = document.getElementById('editImgFile').files[0];
+  if(file){
+    try{
+      const dataUrl = await fileToCompressedDataUrl(file);
+      await storage.set('img:'+it.id, dataUrl, true);
+      imageCache[it.id] = dataUrl;
+      it.imageSource = 'upload';
+      it.imageUrl = '';
+    }catch(e){
+      msg.textContent = (e.message || '照片處理失敗') + '（其他欄位仍會儲存）';
+    }
+  }else if(imgRaw){
+    if(it.imageSource === 'upload'){
+      try{ await storage.delete('img:'+it.id, true); }catch(e){}
+      delete imageCache[it.id];
+    }
+    it.imageSource = 'url';
+    const driveId = extractDriveId(imgRaw);
+    if(driveId){ it.driveId = driveId; it.imageUrl = ''; }
+    else{ it.driveId = null; it.imageUrl = imgRaw; }
+  }
+
+  await saveItems();
+  document.getElementById('editOverlay').classList.remove('show');
+  editTargetId = null;
+  render();
+  showToast('已儲存變更');
+}
+
+async function replaceItemImage(id, file){
+  if(!file) return;
+  const it = items.find(i=>i.id===id);
+  if(!it) return;
+  showToast('正在處理新照片...');
+  try{
+    const dataUrl = await fileToCompressedDataUrl(file);
+    await storage.set('img:'+id, dataUrl, true);
+    imageCache[id] = dataUrl;
+    it.imageSource = 'upload';
+    it.imageUrl = '';
+    it.driveId = null;
+    await saveItems();
+    render();
+    showToast('照片已更新');
+  }catch(e){
+    showToast(e.message || '照片處理失敗，請再試一次');
+  }
+}
+
+async function deleteItem(id){
+  if(!confirm('確定要刪除這個物品嗎？')) return;
+  const it = items.find(i=>i.id===id);
+  items = items.filter(i=>i.id!==id);
+  delete waitlist[id];
+  if(it && it.imageSource === 'upload'){
+    try{ await storage.delete('img:'+id, true); }catch(e){ /* ignore */ }
+    delete imageCache[id];
+  }
+  await saveItems(); await saveWaitlist();
+  render();
+}
+async function setStatus(id, status){
+  const it = items.find(i=>i.id===id);
+  if(it){ it.status = status; await saveItems(); render(); }
+}
+async function removeWaitlistEntry(itemId, idx){
+  waitlist[itemId].splice(idx,1);
+  await saveWaitlist();
+  render();
+}
+
+function renderAdmin(){
+  const list = document.getElementById('adminList');
+  if(items.length===0){ list.innerHTML = '<div class="empty">尚未上架任何物品</div>'; return; }
+  list.innerHTML = items.map(it=>{
+    const wl = waitlist[it.id]||[];
+    const names = wl.length
+      ? `<div class="waitlist-names">候補：${wl.map((w,idx)=>`${idx===0?'★ ':''}${escapeHtml(w.name)}${w.contact?`(${escapeHtml(w.contact)})`:''} <a href="#" onclick="removeWaitlistEntry('${it.id}',${idx});return false;" style="color:var(--tag-red);">移除</a>`).join('、 ')}</div>`
+      : `<div class="waitlist-names">尚無人候補</div>`;
+    return `
+    <div class="admin-item">
+      ${adminImageHtml(it)}
+      <div class="info">
+        <b>${escapeHtml(it.name)}</b>
+        <div class="meta">${escapeHtml(it.category||'未分類')} · ${wl.length} 人候補</div>
+        ${names}
+      </div>
+      <div class="admin-actions">
+        <select class="status-select" onchange="setStatus('${it.id}', this.value)">
+          <option value="available" ${it.status==='available'?'selected':''}>可候補</option>
+          <option value="reserved" ${it.status==='reserved'?'selected':''}>保留中</option>
+          <option value="shipped" ${it.status==='shipped'?'selected':''}>已出貨</option>
+        </select>
+        <label class="btn btn-outline btn-small" style="cursor:pointer;">
+          更換照片
+          <input type="file" accept="image/*" style="display:none" onchange="replaceItemImage('${it.id}', this.files[0])"/>
+        </label>
+        <button class="btn btn-outline btn-small" onclick="openEditItem('${it.id}')">編輯</button>
+        <button class="btn btn-red btn-small" onclick="deleteItem('${it.id}')">刪除</button>
+      </div>
+    </div>`;
+  }).join('');
+  renderAdminPeople();
+  hydrateUploads();
+}
+
+function buildPeopleMap(){
+  const people = {};
+  items.forEach(it=>{
+    if(it.status === 'shipped') return;
+    const wl = waitlist[it.id] || [];
+    wl.forEach((w, idx)=>{
+      const key = (w.name||'').trim() + '|' + (w.contact||'').trim();
+      if(!people[key]) people[key] = {name: w.name, contact: w.contact, items: []};
+      people[key].items.push({itemId: it.id, itemName: it.name, position: idx+1, isTop: idx===0});
+    });
+  });
+  return people;
+}
+
+function renderAdminPeople(){
+  const el = document.getElementById('adminPeopleList');
+  const people = buildPeopleMap();
+  const keys = Object.keys(people);
+  if(keys.length === 0){ el.innerHTML = '<div class="empty">目前還沒有人候補任何物品</div>'; return; }
+  keys.sort((a,b)=>{
+    const topA = people[a].items.filter(i=>i.isTop).length;
+    const topB = people[b].items.filter(i=>i.isTop).length;
+    return topB - topA;
+  });
+  el.innerHTML = keys.map(k=>{
+    const p = people[k];
+    const rows = p.items.map(i=>`
+      <div class="person-item-row">
+        ${i.isTop ? '<span class="prio-badge">★ 最優先候補</span>' : `<span class="pos-badge">第 ${i.position} 順位</span>`}
+        <span style="flex:1;">${escapeHtml(i.itemName)}</span>
+        <button class="btn btn-small" onclick="shipToPerson('${i.itemId}', '${escapeHtml(p.name).replace(/'/g,"\\'")}')">確定出貨</button>
+      </div>`).join('');
+    return `
+    <div class="person-block">
+      <span class="person-name">${escapeHtml(p.name)}</span>
+      ${p.contact ? `<span class="person-contact">${escapeHtml(p.contact)}</span>` : ''}
+      <div class="person-items">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+async function shipToPerson(itemId, personName){
+  if(!confirm(`確定要標記這件物品已出貨給「${personName}」嗎？前台會立刻顯示「已送出」並鎖定。`)) return;
+  await setStatus(itemId, 'shipped');
+  showToast('已標記出貨');
+}
+
+function csvEscape(v){
+  v = (v===undefined||v===null) ? '' : String(v);
+  if(/[",\n]/.test(v)) v = '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+function exportCSV(){
+  const rows = [['物品名稱','分類','狀態','候補姓名','候補順位','加入時間']];
+  items.forEach(it=>{
+    const wl = waitlist[it.id] || [];
+    if(wl.length === 0){
+      rows.push([it.name, it.category||'', statusLabel(it.status), '', '', '']);
+    }else{
+      wl.forEach((w, idx)=>{
+        rows.push([
+          it.name, it.category||'', statusLabel(it.status),
+          w.name, idx+1,
+          w.joinedAt ? new Date(w.joinedAt).toLocaleString('zh-TW') : ''
+        ]);
+      });
+    }
+  });
+  const csv = rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `候補名單_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+loadData().then(()=>{
+  if(location.hash === '#admin'){
+    showAdmin();
+  }else if(!myProfile){
+    openLogin();
+  }
+});
+</script>
+</body>
+</html>
